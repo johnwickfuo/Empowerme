@@ -27,22 +27,15 @@ CREATE TABLE IF NOT EXISTS sponsors (
   INDEX idx_sponsors_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO settings (setting_key, setting_value)
-VALUES ('public_email', 'support@empowermeprogram.org')
-ON DUPLICATE KEY UPDATE setting_value =
-  CASE
-    WHEN setting_value IN ('', 'empowermegrantprogram.usa@gmail.com')
-      THEN 'support@empowermeprogram.org'
-    ELSE setting_value
-  END;
-
-INSERT INTO settings (setting_key, setting_value)
-VALUES ('smtp_from_email', 'support@empowermeprogram.org')
-ON DUPLICATE KEY UPDATE setting_value =
-  CASE
-    WHEN setting_value IN ('', 'empowermegrantprogram.usa@gmail.com')
-      THEN 'support@empowermeprogram.org'
-    ELSE setting_value
-  END;
 SQL);
+
+    $migrationKey = 'migration_support_email_20261005';
+    $check = $db->prepare('SELECT 1 FROM settings WHERE setting_key = ? LIMIT 1');
+    $check->execute([$migrationKey]);
+    if (!$check->fetchColumn()) {
+        $set = $db->prepare('INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
+        $set->execute(['public_email', 'support@empowermeprogram.org']);
+        $set->execute(['smtp_from_email', 'support@empowermeprogram.org']);
+        $set->execute([$migrationKey, '1']);
+    }
 }
