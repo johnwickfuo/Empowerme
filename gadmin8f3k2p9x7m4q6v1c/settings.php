@@ -5,7 +5,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
  verify_csrf();$action=$_POST['action']??'';
  if($action==='save_general'){foreach($generalKeys as $key)set_setting($key,trim((string)($_POST[$key]??'')));flash('success','Website settings saved.');redirect('gadmin8f3k2p9x7m4q6v1c/settings.php');}
  if($action==='save_email'){foreach(['smtp_host','smtp_port','smtp_encryption','smtp_username','smtp_from_email','smtp_from_name'] as $key)set_setting($key,trim((string)($_POST[$key]??'')));$newPass=(string)($_POST['smtp_password']??'');if($newPass!=='')set_setting('smtp_password',encrypt_secret($newPass));flash('success','Email settings saved.');redirect('gadmin8f3k2p9x7m4q6v1c/settings.php');}
- if($action==='test_email'){$to=trim((string)($_POST['test_email']??''));if(!filter_var($to,FILTER_VALIDATE_EMAIL)){flash('error','Enter a valid test email address.');}else{$ok=mail_html($to,'EmpowerME email test',email_shell('Email configuration test','<p>Your EmpowerME SMTP settings are working.</p>'));flash($ok?'success':'error',$ok?'Test email sent successfully.':'The test email could not be sent. Check the SMTP host, port, encryption, username, password, and sender address.');}redirect('gadmin8f3k2p9x7m4q6v1c/settings.php');}
+ if($action==='test_email'){$to=trim((string)($_POST['test_email']??''));if(!filter_var($to,FILTER_VALIDATE_EMAIL)){flash('error','Enter a valid test email address.');}else{$ok=mail_html($to,'EmpowerME email test',email_shell('Email configuration test','<p>Your EmpowerME SMTP settings are working.</p>'));flash($ok?'success':'error',$ok?'Test email sent successfully.':'The test email could not be sent. '.mail_last_error());}redirect('gadmin8f3k2p9x7m4q6v1c/settings.php');}
 }
 $adminTitle='Settings & Email';require __DIR__.'/_header.php';
 ?>
