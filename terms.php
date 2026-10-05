@@ -1,4 +1,9 @@
-<?php require __DIR__ . '/inc/bootstrap.php'; $pageTitle='Terms of Use | '.setting('program_name'); require __DIR__ . '/inc/header.php'; ?>
-<section class="page-hero"><div class="container"><h1>Terms of Use</h1><p>Important conditions governing applications and use of this website.</p></div></section>
-<section class="section"><div class="container legal"><p><?= nl2br(h(setting('terms_text'))) ?></p><h2>No guarantee of funding</h2><p>Submitting an application, receiving a tracking code, supplying documents, responding to a request, or making any disclosed payment does not guarantee approval or funding.</p><h2>Accurate information</h2><p>Applicants are responsible for providing complete and accurate information. Materially false or misleading information may affect an application.</p><h2>Application review</h2><p>Review requirements, timelines, eligibility conditions, and available funding may vary by location, form, program stage, and available resources.</p><h2>Fees</h2><p>If a fee applies to a specific service or processing stage, its purpose and amount should be disclosed to the applicant before payment is requested. A fee is not an assurance of approval, selection, or funding.</p><h2>External links</h2><p>Application updates may contain links relevant to a requested action or additional information. Applicants should confirm that they trust a link before providing information on an external site.</p></div></section>
+<?php
+require __DIR__ . '/inc/bootstrap.php';
+$pageTitle='Terms of Use | '.setting('program_name');
+require __DIR__ . '/inc/header.php';
+?>
+<section class="section">
+  <div class="container legal"><?= nl2br(h(setting('terms_text'))) ?></div>
+</section>
 <?php require __DIR__ . '/inc/footer.php'; ?>
