@@ -26,5 +26,23 @@ CREATE TABLE IF NOT EXISTS sponsors (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_sponsors_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO settings (setting_key, setting_value)
+VALUES ('public_email', 'support@empowermeprogram.org')
+ON DUPLICATE KEY UPDATE setting_value =
+  CASE
+    WHEN setting_value IN ('', 'empowermegrantprogram.usa@gmail.com')
+      THEN 'support@empowermeprogram.org'
+    ELSE setting_value
+  END;
+
+INSERT INTO settings (setting_key, setting_value)
+VALUES ('smtp_from_email', 'support@empowermeprogram.org')
+ON DUPLICATE KEY UPDATE setting_value =
+  CASE
+    WHEN setting_value IN ('', 'empowermegrantprogram.usa@gmail.com')
+      THEN 'support@empowermeprogram.org'
+    ELSE setting_value
+  END;
 SQL);
 }
