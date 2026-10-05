@@ -1,4 +1,9 @@
-<?php require __DIR__ . '/inc/bootstrap.php'; $pageTitle='Privacy Policy | '.setting('program_name'); require __DIR__ . '/inc/header.php'; ?>
-<section class="page-hero"><div class="container"><h1>Privacy Policy</h1><p>How application, contact, and uploaded information is handled.</p></div></section>
-<section class="section"><div class="container legal"><p><?= nl2br(h(setting('privacy_text'))) ?></p><h2>Information we collect</h2><p>We may collect identification and contact information, application responses, uploaded documents, correspondence, and technical records needed to operate the application system.</p><h2>How information is used</h2><p>Information is used to receive and review applications, communicate application updates, request additional information, respond to inquiries, maintain records, and administer the program.</p><h2>Tracking codes</h2><p>Your tracking code is the credential used to view your application progress. Do not publish or share it with people you do not trust.</p><h2>Uploaded documents</h2><p>Uploaded files are stored using randomized internal filenames and are made available through controlled application routes rather than their original filenames.</p><h2>Contact</h2><p>Questions about this policy can be sent to <a href="mailto:<?= h(setting('public_email')) ?>"><?= h(setting('public_email')) ?></a>.</p></div></section>
+<?php
+require __DIR__ . '/inc/bootstrap.php';
+$pageTitle='Privacy Policy | '.setting('program_name');
+require __DIR__ . '/inc/header.php';
+?>
+<section class="section">
+  <div class="container legal"><?= nl2br(h(setting('privacy_text'))) ?></div>
+</section>
 <?php require __DIR__ . '/inc/footer.php'; ?>
