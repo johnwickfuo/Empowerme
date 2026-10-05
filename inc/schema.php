@@ -137,7 +137,7 @@ INSERT INTO settings (setting_key, setting_value) VALUES
 ('program_name', 'EmpowerME Grant Program'),
 ('homepage_headline', 'Funding opportunities starting from $10,000 for eligible applicants'),
 ('homepage_subtitle', 'Support for entrepreneurs, startup founders, small-business owners, students, and individuals working toward meaningful goals.'),
-('public_email', 'empowermegrantprogram.usa@gmail.com'),
+('public_email', 'support@empowermeprogram.org'),
 ('public_phone', '+1 (223) 276-9359'),
 ('whatsapp_url', 'https://wa.me/message/V2EPE4VW3CATM1'),
 ('organization_location', 'United States'),
@@ -149,7 +149,7 @@ INSERT INTO settings (setting_key, setting_value) VALUES
 ('smtp_encryption', 'tls'),
 ('smtp_username', ''),
 ('smtp_password', ''),
-('smtp_from_email', ''),
+('smtp_from_email', 'support@empowermeprogram.org'),
 ('smtp_from_name', 'EmpowerME Grant Program')
 ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
 
