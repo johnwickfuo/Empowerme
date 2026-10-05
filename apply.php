@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
                     if ($upload) store_uploaded_file($db, $appId, null, $field['field_key'], $upload);
                 }
                 $db->commit();
-                $app = ['tracking_code'=>$code,'full_name'=>$fullName,'email'=>$email];
+                $app = ['id'=>$appId,'tracking_code'=>$code,'full_name'=>$fullName,'email'=>$email];
                 send_application_confirmation($app);
                 redirect('application-success.php?code=' . urlencode($code));
             } catch (PDOException $e) {
