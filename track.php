@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='reply') {
             foreach($uploads as $u) store_uploaded_file($db,(int)$app['id'],$updateId,null,$u);
             $db->commit();
             $notify=setting('public_email');
-            if($notify) mail_html($notify,'Applicant response: '.$app['tracking_code'],email_shell('New applicant response','<p><strong>Tracking code:</strong> '.h($app['tracking_code']).'</p><p><strong>Applicant:</strong> '.h($app['full_name']).'</p><p>'.nl2br(h($message)).'</p>'));
+            if($notify) mail_html($notify,'Applicant response: '.$app['tracking_code'],email_shell('New applicant response','<p><strong>Tracking code:</strong> '.h($app['tracking_code']).'</p><p><strong>Applicant:</strong> '.h($app['full_name']).'</p><p>'.nl2br(h($message)).'</p>'),(int)$app['id'],'applicant_response_alert');
             flash('success','Your response has been added to the application.'); redirect('track.php?code='.urlencode($code));
         } catch(Throwable $e){ if($db->inTransaction())$db->rollBack(); $errors[]=$e->getMessage(); }
     }
