@@ -1,0 +1,6 @@
+Options -Indexes
+<FilesMatch "^(README\.md|CREDITS\.md)$">
+  Require all denied
+</FilesMatch>
+RewriteEngine On
+RewriteRule ^(?:inc|storage)/ - [F,L]
