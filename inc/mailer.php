@@ -208,6 +208,7 @@ function smtp_deliver_once(string $to, string $subject, string $html, string &$e
     [$dataCode, $dataResponse] = smtp_read_response($socket);
     if ($dataCode !== 250) {
         $error = 'SMTP server did not accept the email: ' . ($dataResponse ?: 'no response');
+        $quitError = '';
         @smtp_command($socket, 'QUIT', [221,250], $quitError);
         fclose($socket);
         return false;
