@@ -26,6 +26,64 @@ function mail_log_event(string $status, string $to, string $subject, string $det
     @file_put_contents($dir . '/mail.log', $line, FILE_APPEND | LOCK_EX);
 }
 
+
+function mail_delivery_start(?int $applicationId, string $messageType, string $to, string $subject): ?int
+{
+    global $db;
+    try {
+        if (!isset($db) || !($db instanceof PDO)) return null;
+        $stmt = $db->prepare('INSERT INTO email_deliveries (application_id,message_type,recipient,subject,status,attempts) VALUES (?,?,?,?,\'pending\',0)');
+        $stmt->execute([$applicationId ?: null, $messageType, $to, $subject]);
+        return (int)$db->lastInsertId();
+    } catch (Throwable $e) {
+        mail_log_event('tracking-error', $to, $subject, $e->getMessage());
+        return null;
+    }
+}
+
+function mail_delivery_finish(?int $deliveryId, bool $sent, int $attempts, string $error = ''): void
+{
+    global $db;
+    if (!$deliveryId) return;
+    try {
+        $stmt = $db->prepare("UPDATE email_deliveries SET status=?, attempts=?, last_error=?, sent_at=? WHERE id=?");
+        $stmt->execute([
+            $sent ? 'sent' : 'failed',
+            $attempts,
+            $sent ? null : $error,
+            $sent ? date('Y-m-d H:i:s') : null,
+            $deliveryId
+        ]);
+    } catch (Throwable $e) {
+        mail_log_event('tracking-error', '', 'delivery #' . $deliveryId, $e->getMessage());
+    }
+}
+
+function application_confirmation_sent(int $applicationId): bool
+{
+    global $db;
+    try {
+        $stmt = $db->prepare("SELECT 1 FROM email_deliveries WHERE application_id=? AND message_type='application_confirmation' AND status='sent' LIMIT 1");
+        $stmt->execute([$applicationId]);
+        return (bool)$stmt->fetchColumn();
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+function latest_application_confirmation_delivery(int $applicationId): ?array
+{
+    global $db;
+    try {
+        $stmt = $db->prepare("SELECT * FROM email_deliveries WHERE application_id=? AND message_type='application_confirmation' ORDER BY id DESC LIMIT 1");
+        $stmt->execute([$applicationId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
 function smtp_read_response($socket): array
 {
     $data = '';
@@ -172,23 +230,45 @@ function smtp_deliver_once(string $to, string $subject, string $html, string &$e
     $safeSubject = str_replace(["\r","\n"], '', $subject);
     $messageIdDomain = filter_var($domain, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) ? $domain : 'empowermeprogram.org';
 
+    $boundary = '=_EmpowerME_' . bin2hex(random_bytes(12));
     $headers = [
         'From: ' . sprintf('"%s" <%s>', $safeFromName, $from),
         'Reply-To: <' . $from . '>',
         'To: <' . $to . '>',
         'Subject: =?UTF-8?B?' . base64_encode($safeSubject) . '?=',
         'MIME-Version: 1.0',
-        'Content-Type: text/html; charset=UTF-8',
-        'Content-Transfer-Encoding: 8bit',
+        'Content-Type: multipart/alternative; boundary="' . $boundary . '"',
         'Date: ' . date(DATE_RFC2822),
         'Message-ID: <' . bin2hex(random_bytes(12)) . '@' . $messageIdDomain . '>',
         'X-Mailer: EmpowerME',
+        'Auto-Submitted: auto-generated',
     ];
 
-    $normalizedHtml = str_replace(["\r\n","\r"], "\n", $html);
-    $normalizedHtml = preg_replace('/(?m)^\./', '..', $normalizedHtml) ?? $normalizedHtml;
-    $normalizedHtml = str_replace("\n", "\r\n", $normalizedHtml);
-    $payload = implode("\r\n", $headers) . "\r\n\r\n" . $normalizedHtml . "\r\n.\r\n";
+    $plain = html_entity_decode(strip_tags(
+        preg_replace('~<\s*(br|/p|/div|/h[1-6]|/li)\b[^>]*>~i', "\n", $html) ?? $html
+    ), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $plain = trim(preg_replace("/\n{3,}/", "\n\n", $plain) ?? $plain);
+
+    $encode = static function(string $value): string {
+        $value = str_replace(["\r\n","\r"], "\n", $value);
+        $value = function_exists('quoted_printable_encode') ? quoted_printable_encode($value) : $value;
+        $value = str_replace(["\r\n","\r"], "\n", $value);
+        $value = preg_replace('/(?m)^\./', '..', $value) ?? $value;
+        return str_replace("\n", "\r\n", $value);
+    };
+
+    $body =
+        '--' . $boundary . "\r\n" .
+        "Content-Type: text/plain; charset=UTF-8\r\n" .
+        "Content-Transfer-Encoding: quoted-printable\r\n\r\n" .
+        $encode($plain) . "\r\n" .
+        '--' . $boundary . "\r\n" .
+        "Content-Type: text/html; charset=UTF-8\r\n" .
+        "Content-Transfer-Encoding: quoted-printable\r\n\r\n" .
+        $encode($html) . "\r\n" .
+        '--' . $boundary . "--\r\n";
+
+    $payload = implode("\r\n", $headers) . "\r\n\r\n" . $body . ".\r\n";
 
     if (@fwrite($socket, $payload) === false) {
         $error = 'Could not send the email data to the SMTP server.';
@@ -211,14 +291,18 @@ function smtp_deliver_once(string $to, string $subject, string $html, string &$e
     return true;
 }
 
-function mail_html(string $to, string $subject, string $html): bool
+function mail_html(string $to, string $subject, string $html, ?int $applicationId = null, string $messageType = 'general'): bool
 {
     mail_set_error('');
     $lastError = '';
+    $deliveryId = mail_delivery_start($applicationId, $messageType, $to, $subject);
+    $attempts = 0;
 
     for ($attempt = 1; $attempt <= 2; $attempt++) {
+        $attempts = $attempt;
         $error = '';
         if (smtp_deliver_once($to, $subject, $html, $error)) {
+            mail_delivery_finish($deliveryId, true, $attempts);
             mail_log_event('sent', $to, $subject, 'attempt=' . $attempt);
             return true;
         }
@@ -227,6 +311,7 @@ function mail_html(string $to, string $subject, string $html): bool
     }
 
     mail_set_error($lastError);
+    mail_delivery_finish($deliveryId, false, $attempts, $lastError);
     mail_log_event('failed', $to, $subject, $lastError);
     return false;
 }
@@ -246,7 +331,7 @@ function send_application_confirmation(array $app): bool
 
     $trackUrl = app_url('track.php?code=' . urlencode((string)$app['tracking_code']));
     $body = '<p>Hello '.h((string)$app['full_name']).',</p><p>We received your grant application. Keep the tracking code below private; it is used to access your application updates.</p><div style="font-size:26px;font-weight:700;letter-spacing:2px;background:#eef5f8;padding:16px;border-radius:10px;margin:22px 0">'.h((string)$app['tracking_code']).'</div><p><a href="'.h($trackUrl).'" style="display:inline-block;background:#064f78;color:#fff;text-decoration:none;padding:12px 18px;border-radius:8px">Track your application</a></p><p>Submitting an application does not guarantee funding. All applications are subject to eligibility and review.</p>';
-    return mail_html((string)$app['email'], 'Your EmpowerME grant application was received', email_shell('Application received', $body));
+    return mail_html((string)$app['email'], 'Your EmpowerME grant application was received', email_shell('Application received', $body), isset($app['id']) ? (int)$app['id'] : null, 'application_confirmation');
 }
 
 function send_update_email(array $app, array $update): bool
@@ -263,5 +348,5 @@ function send_update_email(array $app, array $update): bool
         $body .= '<p><a href="'.h((string)$update['link_url']).'" style="display:inline-block;background:#0b79ad;color:#fff;text-decoration:none;padding:11px 16px;border-radius:8px">'.h($label).'</a></p>';
     }
     $body .= '<p><a href="'.h($trackUrl).'" style="display:inline-block;background:#064f78;color:#fff;text-decoration:none;padding:12px 18px;border-radius:8px">View application progress</a></p>';
-    return mail_html((string)$app['email'], 'Update to your EmpowerME grant application', email_shell('Application update', $body));
+    return mail_html((string)$app['email'], 'Update to your EmpowerME grant application', email_shell('Application update', $body), isset($app['id']) ? (int)$app['id'] : null, 'application_update');
 }
