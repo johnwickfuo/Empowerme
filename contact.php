@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
     if (!$errors) {
         $stmt=$db->prepare('INSERT INTO contact_messages (name,email,phone,message) VALUES (?,?,?,?)'); $stmt->execute([$name,$email,$phone,$message]);
         $notify=setting('public_email');
-        if ($notify) mail_html($notify,'New EmpowerME website inquiry',email_shell('New contact inquiry','<p><strong>From:</strong> '.h($name).' ('.h($email).')</p><p><strong>Phone:</strong> '.h($phone).'</p><p>'.nl2br(h($message)).'</p>'));
+        if ($notify) mail_html($notify,'New EmpowerME website inquiry',email_shell('New contact inquiry','<p><strong>From:</strong> '.h($name).' ('.h($email).')</p><p><strong>Phone:</strong> '.h($phone).'</p><p>'.nl2br(h($message)).'</p>'),null,'contact_alert');
         flash('success','Thank you. Your message has been received.'); redirect('contact.php');
     }
 }
