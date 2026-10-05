@@ -93,21 +93,12 @@ function smtp_deliver_once(string $to, string $subject, string $html, string &$e
 
     $transport = $enc === 'ssl' ? 'ssl://' : '';
     $target = $transport . $host . ':' . $port;
-    $context = stream_context_create([
-        'ssl' => [
-            'verify_peer' => true,
-            'verify_peer_name' => true,
-            'allow_self_signed' => false,
-        ],
-    ]);
-
     $socket = @stream_socket_client(
         $target,
         $errno,
         $errstr,
         20,
-        STREAM_CLIENT_CONNECT,
-        $context
+        STREAM_CLIENT_CONNECT
     );
     if (!$socket) {
         $error = 'Could not connect to SMTP server: ' . ($errstr ?: 'connection failed') . ($errno ? ' (' . $errno . ')' : '');
