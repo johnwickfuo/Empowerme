@@ -11,7 +11,7 @@ $current = basename($_SERVER['PHP_SELF'] ?? '');
 <!-- Smartsupp Live Chat script -->
 <script type="text/javascript">
 var _smartsupp = _smartsupp || {};
-_smartsupp.key = '1c2ee601ef682539921a6f926feb0275b477bb8e';
+_smartsupp.key = 'c6898f6a3c5810d11c96961ea0ec9b83274b77c0';
 window.smartsupp||(function(d) {
   var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
   s=d.getElementsByTagName('script')[0];c=d.createElement('script');
